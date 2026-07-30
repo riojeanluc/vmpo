@@ -161,3 +161,15 @@ def test_ssh_action_failure_is_reported_not_raised():
 
     assert not results[0].ok
     assert "Permission denied" in results[0].skipped_reason
+
+
+def test_ssh_delete_old_files_success():
+    ssh = _FakeSSH(returncode=0)
+    target = Target(category="synology", subcategory="temp", path="/volume1/@tmp",
+                     description="test", size_bytes=10, action=Action.SSH_DELETE_OLD_FILES,
+                     meta={"ssh": ssh, "min_age_days": 3})
+
+    results = clean([target], dry_run=False)
+
+    assert results[0].ok
+    assert ssh.calls == ["find /volume1/@tmp -mindepth 1 -type f -mtime +3 -delete"]

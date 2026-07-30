@@ -28,7 +28,7 @@ def _collect_targets(
     if "synology" in categories:
         if ssh_target is None:
             raise SystemExit("--categories synology nécessite --ssh-host et --ssh-user")
-        targets += scan_synology(ssh_target, volume_roots)
+        targets += scan_synology(ssh_target, volume_roots, min_age_days=min_age_days)
     return targets
 
 
@@ -40,7 +40,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--categories", default="system,browser",
                          help="Catégories à traiter : system,browser,synology (défaut : system,browser)")
     parser.add_argument("--min-age-days", type=int, default=3,
-                         help="Âge minimum en jours des fichiers temporaires à nettoyer (défaut : 3)")
+                         help="Âge minimum en jours des fichiers temporaires à nettoyer, "
+                              "Windows et Synology @tmp inclus (défaut : 3)")
     parser.add_argument("--log-file", default=None, help="Chemin du fichier de log")
 
     parser.add_argument("--ssh-host", default=None, help="Adresse du NAS Synology (catégorie synology)")

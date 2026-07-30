@@ -1,7 +1,7 @@
 import subprocess
 
 from cleaner_app.models import Action
-from cleaner_app.scanners.synology import scan_all, scan_eadir, scan_recycle_bins
+from cleaner_app.scanners.synology import scan_all, scan_eadir, scan_recycle_bins, scan_temp
 
 
 class _FakeSSH:
@@ -45,11 +45,32 @@ def test_scan_ignores_blank_and_malformed_lines():
     assert scan_eadir(ssh, ["/volume1"]) == []
 
 
-def test_scan_all_queries_each_volume_root_for_both_categories():
-    ssh = _FakeSSH(["", "", "", ""])
+def test_scan_temp_aggregates_matching_files_into_one_target():
+    ssh = _FakeSSH(["1024\t/volume1/@tmp/upload1.part\n2048\t/volume1/@tmp/upload2.part\n"])
+
+    targets = scan_temp(ssh, ["/volume1"], min_age_days=3)
+
+    assert len(targets) == 1
+    assert targets[0].path == "/volume1/@tmp"
+    assert targets[0].size_bytes == 3072
+    assert targets[0].subcategory == "temp"
+    assert targets[0].action == Action.SSH_DELETE_OLD_FILES
+    assert targets[0].meta == {"ssh": ssh, "min_age_days": 3}
+    assert "mtime +3" in ssh.calls[0]
+    assert "/volume1/@tmp" in ssh.calls[0]
+
+
+def test_scan_temp_returns_nothing_when_no_old_files():
+    ssh = _FakeSSH([""])
+
+    assert scan_temp(ssh, ["/volume1"]) == []
+
+
+def test_scan_all_queries_each_volume_root_for_all_categories():
+    ssh = _FakeSSH(["", "", "", "", "", ""])
 
     scan_all(ssh, ["/volume1", "/volume2"])
 
-    assert len(ssh.calls) == 4
+    assert len(ssh.calls) == 6
     assert any("/volume1" in call for call in ssh.calls)
     assert any("/volume2" in call for call in ssh.calls)

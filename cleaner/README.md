@@ -64,11 +64,12 @@ python -m cleaner_app --categories synology --ssh-host nas.local --ssh-user admi
 | `browser` | Cache Chrome/Edge/Brave/Firefox | suppression du contenu du dossier de cache |
 | `synology` | Caches de miniatures `@eaDir` | suppression complète du dossier (DSM le régénère à la demande) |
 | `synology` | Corbeilles `#recycle` des dossiers partagés | suppression du contenu, le dossier `#recycle` est conservé |
+| `synology` | `@tmp` (fichiers temporaires DSM) | suppression des fichiers plus vieux que `--min-age-days` (même filtre que côté Windows) |
 
 Portée volontairement limitée pour la v1 : cookies, mots de passe enregistrés
 et téléchargements ne sont pas touchés côté navigateurs ; côté Synology,
-seuls `@eaDir` et `#recycle` sont couverts (pas de logs DSM, cache du Centre
-de paquets, ni Docker/Container Manager).
+seuls `@eaDir`, `#recycle` et `@tmp` sont couverts (pas de logs DSM, cache du
+Centre de paquets, ni Docker/Container Manager).
 
 La catégorie `synology` nécessite `--ssh-host` et `--ssh-user` (sinon
 `cleaner_app` s'arrête avec un message d'erreur explicite). Par défaut, seul

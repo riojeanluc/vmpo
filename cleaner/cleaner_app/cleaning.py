@@ -72,6 +72,14 @@ def _ssh_empty_dir(target: Target) -> None:
     _ssh_run_or_raise(target, f"find {shlex.quote(target.path)} -mindepth 1 -delete")
 
 
+def _ssh_delete_old_files(target: Target) -> None:
+    min_age_days = target.meta["min_age_days"]
+    _ssh_run_or_raise(
+        target,
+        f"find {shlex.quote(target.path)} -mindepth 1 -type f -mtime +{min_age_days} -delete",
+    )
+
+
 def clean(targets: List[Target], dry_run: bool = True) -> List[CleanResult]:
     results: List[CleanResult] = []
     for target in targets:
@@ -95,6 +103,8 @@ def clean(targets: List[Target], dry_run: bool = True) -> List[CleanResult]:
                 _ssh_delete_dir(target)
             elif target.action == Action.SSH_EMPTY_DIR:
                 _ssh_empty_dir(target)
+            elif target.action == Action.SSH_DELETE_OLD_FILES:
+                _ssh_delete_old_files(target)
             else:
                 raise ValueError(f"Unknown action: {target.action}")
 

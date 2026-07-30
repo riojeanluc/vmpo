@@ -18,6 +18,11 @@ _EADIR_FIND_CMD = "find {root} -type d -iname '@eaDir' -prune -exec du -sb {{}} 
 # volume root), so maxdepth keeps this from scanning the whole volume.
 _RECYCLE_FIND_CMD = "find {root} -mindepth 1 -maxdepth 2 -type d -iname '#recycle' -exec du -sb {{}} \\;"
 
+# @tmp is DSM's own scratch space (File Station uploads, Package Center,
+# ...); only files older than min_age_days are matched, same semantics as
+# the Windows temp scanner, so nothing mid-write gets caught.
+_TEMP_FIND_CMD = "find {root} -mindepth 1 -type f -mtime +{min_age_days} -exec du -sb {{}} \\;"
+
 
 def _parse_du_output(output: str) -> List[Tuple[int, str]]:
     entries: List[Tuple[int, str]] = []
@@ -60,5 +65,34 @@ def scan_recycle_bins(ssh: SSHTarget, volume_roots: List[str]) -> List[Target]:
     return targets
 
 
-def scan_all(ssh: SSHTarget, volume_roots: List[str]) -> List[Target]:
-    return scan_eadir(ssh, volume_roots) + scan_recycle_bins(ssh, volume_roots)
+def scan_temp(ssh: SSHTarget, volume_roots: List[str], min_age_days: int = 3) -> List[Target]:
+    """One aggregate Target per volume's @tmp folder (not one per file):
+    cleaning re-runs the same find filter with -delete, so a single SSH
+    round trip covers both scan and clean instead of one per file."""
+    targets: List[Target] = []
+    for root in volume_roots:
+        temp_root = f"{root.rstrip('/')}/@tmp"
+        result = ssh.run(_TEMP_FIND_CMD.format(root=shlex.quote(temp_root), min_age_days=min_age_days))
+        entries = _parse_du_output(result.stdout)
+        if not entries:
+            continue
+        total_size = sum(size for size, _ in entries)
+        targets.append(Target(
+            category="synology", subcategory="temp",
+            path=temp_root,
+            description=(
+                f"Fichiers temporaires @tmp de plus de {min_age_days} j "
+                f"({len(entries)} fichier(s), {temp_root})"
+            ),
+            size_bytes=total_size, action=Action.SSH_DELETE_OLD_FILES,
+            meta={"ssh": ssh, "min_age_days": min_age_days},
+        ))
+    return targets
+
+
+def scan_all(ssh: SSHTarget, volume_roots: List[str], min_age_days: int = 3) -> List[Target]:
+    return (
+        scan_eadir(ssh, volume_roots)
+        + scan_recycle_bins(ssh, volume_roots)
+        + scan_temp(ssh, volume_roots, min_age_days=min_age_days)
+    )

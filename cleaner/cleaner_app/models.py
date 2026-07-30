@@ -12,6 +12,7 @@ class Action(str, Enum):
     CLEAR_SQLITE_HISTORY = "clear_sqlite_history"
     SSH_DELETE_DIR = "ssh_delete_dir"
     SSH_EMPTY_DIR = "ssh_empty_dir"
+    SSH_DELETE_OLD_FILES = "ssh_delete_old_files"
 
 
 @dataclass
