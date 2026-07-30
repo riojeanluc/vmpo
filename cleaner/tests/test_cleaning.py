@@ -1,8 +1,20 @@
+import subprocess
 import sqlite3
 from pathlib import Path
 
 from cleaner_app.cleaning import clean
 from cleaner_app.models import Action, Target
+
+
+class _FakeSSH:
+    def __init__(self, returncode=0, stderr=""):
+        self.returncode = returncode
+        self.stderr = stderr
+        self.calls = []
+
+    def run(self, remote_command, timeout=60):
+        self.calls.append(remote_command)
+        return subprocess.CompletedProcess(remote_command, self.returncode, stdout="", stderr=self.stderr)
 
 
 def _make_chromium_db(path: Path) -> None:
@@ -113,3 +125,39 @@ def test_delete_dir_contents(tmp_path):
 
     assert results[0].ok
     assert list(cache_dir.iterdir()) == []
+
+
+def test_ssh_delete_dir_success():
+    ssh = _FakeSSH(returncode=0)
+    target = Target(category="synology", subcategory="eadir", path="/volume1/photo/@eaDir",
+                     description="test", size_bytes=10, action=Action.SSH_DELETE_DIR,
+                     meta={"ssh": ssh})
+
+    results = clean([target], dry_run=False)
+
+    assert results[0].ok
+    assert ssh.calls == ["rm -rf -- /volume1/photo/@eaDir"]
+
+
+def test_ssh_empty_dir_success():
+    ssh = _FakeSSH(returncode=0)
+    target = Target(category="synology", subcategory="recycle_bin", path="/volume1/homes/#recycle",
+                     description="test", size_bytes=10, action=Action.SSH_EMPTY_DIR,
+                     meta={"ssh": ssh})
+
+    results = clean([target], dry_run=False)
+
+    assert results[0].ok
+    assert ssh.calls == ["find '/volume1/homes/#recycle' -mindepth 1 -delete"]
+
+
+def test_ssh_action_failure_is_reported_not_raised():
+    ssh = _FakeSSH(returncode=1, stderr="Permission denied")
+    target = Target(category="synology", subcategory="eadir", path="/volume1/photo/@eaDir",
+                     description="test", size_bytes=10, action=Action.SSH_DELETE_DIR,
+                     meta={"ssh": ssh})
+
+    results = clean([target], dry_run=False)
+
+    assert not results[0].ok
+    assert "Permission denied" in results[0].skipped_reason

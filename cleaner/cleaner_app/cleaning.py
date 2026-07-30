@@ -6,8 +6,10 @@ from __future__ import annotations
 import ctypes
 import logging
 import os
+import shlex
 import shutil
 import sqlite3
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -56,6 +58,20 @@ def _empty_recycle_bin() -> None:
     )
 
 
+def _ssh_run_or_raise(target: Target, remote_command: str) -> None:
+    result = target.meta["ssh"].run(remote_command)
+    if result.returncode != 0:
+        raise OSError(result.stderr.strip() or f"ssh command failed (exit {result.returncode})")
+
+
+def _ssh_delete_dir(target: Target) -> None:
+    _ssh_run_or_raise(target, f"rm -rf -- {shlex.quote(target.path)}")
+
+
+def _ssh_empty_dir(target: Target) -> None:
+    _ssh_run_or_raise(target, f"find {shlex.quote(target.path)} -mindepth 1 -delete")
+
+
 def clean(targets: List[Target], dry_run: bool = True) -> List[CleanResult]:
     results: List[CleanResult] = []
     for target in targets:
@@ -75,12 +91,16 @@ def clean(targets: List[Target], dry_run: bool = True) -> List[CleanResult]:
                 _empty_recycle_bin()
             elif target.action == Action.CLEAR_SQLITE_HISTORY:
                 _clear_sqlite_history(target)
+            elif target.action == Action.SSH_DELETE_DIR:
+                _ssh_delete_dir(target)
+            elif target.action == Action.SSH_EMPTY_DIR:
+                _ssh_empty_dir(target)
             else:
                 raise ValueError(f"Unknown action: {target.action}")
 
             logger.info("cleaned: %s (%s Mo)", target.path, target.size_mb())
             results.append(CleanResult(target, ok=True))
-        except (OSError, sqlite3.Error) as exc:
+        except (OSError, sqlite3.Error, subprocess.SubprocessError) as exc:
             logger.warning("skipped %s: %s", target.path, exc)
             results.append(CleanResult(target, ok=False, skipped_reason=str(exc)))
     return results

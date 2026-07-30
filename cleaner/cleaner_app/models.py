@@ -10,6 +10,8 @@ class Action(str, Enum):
     DELETE_DIR_CONTENTS = "delete_dir_contents"
     EMPTY_RECYCLE_BIN = "empty_recycle_bin"
     CLEAR_SQLITE_HISTORY = "clear_sqlite_history"
+    SSH_DELETE_DIR = "ssh_delete_dir"
+    SSH_EMPTY_DIR = "ssh_empty_dir"
 
 
 @dataclass

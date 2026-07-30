@@ -1,7 +1,9 @@
 # cleaner_app
 
-Outil CLI de nettoyage pour **Windows** : fichiers temporaires, Corbeille,
-historique et cache des navigateurs (Chrome, Edge, Brave, Firefox).
+Outil CLI de nettoyage pour **Windows** (fichiers temporaires, Corbeille,
+historique et cache des navigateurs Chrome, Edge, Brave, Firefox) et pour un
+**NAS Synology** joignable en SSH depuis le PC (caches de miniatures @eaDir,
+corbeilles des dossiers partagés).
 
 Écrit en Python (bibliothèque standard uniquement, aucune dépendance
 d'exécution). `pytest` est utilisé pour les tests.
@@ -19,6 +21,11 @@ d'exécution). `pytest` est utilisé pour les tests.
 - **Historique Firefox** : les entrées liées à un signet sont préservées,
   seul l'historique de navigation est effacé.
 - Tout ce qui est réellement supprimé est journalisé (`--log-file`).
+- **Synology** : authentification SSH par clé uniquement (`BatchMode=yes`,
+  aucun mot de passe n'est jamais demandé ni stocké). Avant la première
+  utilisation, connecte-toi une fois manuellement en SSH au NAS
+  (`ssh user@nas`) pour accepter son empreinte — sans quoi la connexion
+  échouera proprement plutôt que de risquer une interception silencieuse.
 
 ## Utilisation
 
@@ -37,6 +44,13 @@ python -m cleaner_app clean --yes
 
 # Limiter aux catégories, changer l'âge minimum des temporaires, journaliser
 python -m cleaner_app --categories system --min-age-days 7 --log-file cleaner.log clean --yes
+
+# NAS Synology (via SSH, clé privée recommandée)
+python -m cleaner_app --categories synology --ssh-host nas.local --ssh-user admin ^
+    --ssh-key C:\Users\moi\.ssh\id_ed25519 scan
+
+python -m cleaner_app --categories synology --ssh-host nas.local --ssh-user admin ^
+    --ssh-key C:\Users\moi\.ssh\id_ed25519 clean --yes
 ```
 
 ## Ce qui est nettoyé
@@ -48,9 +62,18 @@ python -m cleaner_app --categories system --min-age-days 7 --log-file cleaner.lo
 | `browser` | Historique Chrome/Edge/Brave (`History` SQLite) | suppression des lignes `urls`/`visits` |
 | `browser` | Historique Firefox (`places.sqlite`) | suppression de l'historique, signets préservés |
 | `browser` | Cache Chrome/Edge/Brave/Firefox | suppression du contenu du dossier de cache |
+| `synology` | Caches de miniatures `@eaDir` | suppression complète du dossier (DSM le régénère à la demande) |
+| `synology` | Corbeilles `#recycle` des dossiers partagés | suppression du contenu, le dossier `#recycle` est conservé |
 
 Portée volontairement limitée pour la v1 : cookies, mots de passe enregistrés
-et téléchargements ne sont pas touchés.
+et téléchargements ne sont pas touchés côté navigateurs ; côté Synology,
+seuls `@eaDir` et `#recycle` sont couverts (pas de logs DSM, cache du Centre
+de paquets, ni Docker/Container Manager).
+
+La catégorie `synology` nécessite `--ssh-host` et `--ssh-user` (sinon
+`cleaner_app` s'arrête avec un message d'erreur explicite). Par défaut, seul
+`/volume1` est scanné ; utilise `--synology-volumes /volume1,/volume2` si le
+NAS a plusieurs volumes.
 
 ## Obtenir un exécutable Windows (sans installer Python)
 
