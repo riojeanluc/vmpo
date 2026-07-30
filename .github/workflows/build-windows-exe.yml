@@ -1,0 +1,37 @@
+name: Build cleaner_app.exe
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "cleaner/**"
+      - ".github/workflows/build-windows-exe.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: cleaner
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build and test dependencies
+        run: pip install pytest pyinstaller
+
+      - name: Run tests
+        run: python -m pytest
+
+      - name: Build standalone executable
+        run: pyinstaller --onefile --name cleaner_app --console run_cleaner.py
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleaner_app-windows-exe
+          path: cleaner/dist/cleaner_app.exe
