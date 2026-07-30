@@ -5,15 +5,13 @@ on:
     branches: ["**"]
     paths:
       - "cleaner/**"
+      - "installer/**"
       - ".github/workflows/build-windows-exe.yml"
   workflow_dispatch: {}
 
 jobs:
   build:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: cleaner
     steps:
       - uses: actions/checkout@v4
 
@@ -22,12 +20,15 @@ jobs:
           python-version: "3.11"
 
       - name: Install build and test dependencies
+        working-directory: cleaner
         run: pip install pytest pyinstaller
 
       - name: Run tests
+        working-directory: cleaner
         run: python -m pytest
 
       - name: Build standalone executable
+        working-directory: cleaner
         run: pyinstaller --onefile --name cleaner_app --console run_cleaner.py
 
       - name: Upload executable artifact
@@ -35,3 +36,16 @@ jobs:
         with:
           name: cleaner_app-windows-exe
           path: cleaner/dist/cleaner_app.exe
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer (Setup.exe)
+        working-directory: installer
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" cleaner_app.iss'
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CleanerAppSetup
+          path: installer/output/CleanerAppSetup.exe

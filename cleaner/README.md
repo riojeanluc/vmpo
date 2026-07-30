@@ -52,29 +52,38 @@ python -m cleaner_app --categories system --min-age-days 7 --log-file cleaner.lo
 Portée volontairement limitée pour la v1 : cookies, mots de passe enregistrés
 et téléchargements ne sont pas touchés.
 
-## Obtenir un .exe (sans installer Python)
+## Obtenir un exécutable Windows (sans installer Python)
 
-Un exécutable Windows autonome (`cleaner_app.exe`) est construit
-automatiquement par la CI GitHub Actions (`.github/workflows/build-windows-exe.yml`,
-runner `windows-latest`, via PyInstaller) à chaque push touchant `cleaner/`.
-Le binaire est disponible en téléchargement dans l'onglet **Actions** du
-dépôt, sur le run correspondant, section *Artifacts* (`cleaner_app-windows-exe`).
+La CI GitHub Actions (`.github/workflows/build-windows-exe.yml`, runner
+`windows-latest`) construit automatiquement, à chaque push touchant
+`cleaner/` ou `installer/`, deux livrables disponibles en téléchargement
+dans l'onglet **Actions** du dépôt (section *Artifacts* du run) :
 
-Pour le lancer sans passer par un terminal, il suffit ensuite de copier
-`cleaner_app.exe` où l'on veut sur le disque et d'exécuter, par exemple :
-
-```
-cleaner_app.exe scan
-cleaner_app.exe clean --yes
-```
+- **`cleaner_app-windows-exe`** : le `.exe` portable seul (via PyInstaller).
+  Il suffit de le copier où l'on veut sur le disque et de le lancer :
+  ```
+  cleaner_app.exe scan
+  cleaner_app.exe clean --yes
+  ```
+- **`CleanerAppSetup`** : un vrai installeur Windows (`CleanerAppSetup.exe`,
+  généré avec Inno Setup à partir de `installer/cleaner_app.iss`). Il propose
+  un assistant d'installation classique, ajoute un raccourci « Analyser
+  (scan) » et « Désinstaller » au menu Démarrer, et une entrée dans
+  *Programmes et fonctionnalités*.
 
 Pour builder soi-même sur une machine Windows :
 
 ```bash
+# 1. le .exe portable
 cd cleaner
 pip install pyinstaller
 pyinstaller --onefile --name cleaner_app --console run_cleaner.py
 # résultat dans dist/cleaner_app.exe
+
+# 2. l'installeur (nécessite Inno Setup : https://jrsoftware.org/isinfo.php)
+cd ../installer
+iscc cleaner_app.iss
+# résultat dans installer/output/CleanerAppSetup.exe
 ```
 
 ## Développement
