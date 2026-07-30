@@ -1,0 +1,8 @@
+[project]
+name = "cleaner-app"
+version = "0.1.0"
+description = "Outil CLI de nettoyage système et navigateurs (Windows)"
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
