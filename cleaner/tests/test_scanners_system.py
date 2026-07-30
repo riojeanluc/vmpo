@@ -2,6 +2,7 @@ import os
 import time
 from pathlib import Path
 
+from cleaner_app.scanners import system_windows
 from cleaner_app.scanners.system_windows import scan_temp_dirs
 
 
@@ -27,5 +28,8 @@ def test_scan_temp_dirs_only_returns_old_files(tmp_path, monkeypatch):
 def test_scan_temp_dirs_empty_when_no_env_set(monkeypatch):
     monkeypatch.delenv("TEMP", raising=False)
     monkeypatch.delenv("TMP", raising=False)
+    # On real Windows, C:\Windows\Temp is scanned unconditionally regardless
+    # of TEMP/TMP; force the non-Windows branch to isolate the env-var case.
+    monkeypatch.setattr(system_windows, "is_windows", lambda: False)
 
     assert scan_temp_dirs() == []
