@@ -1,0 +1,104 @@
+/* For licensing terms, see /license.txt */
+
+.readaloud-widget {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.readaloud-widget[hidden] {
+    display: none;
+}
+
+.readaloud-btn,
+.readaloud-rate select {
+    min-height: 36px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.readaloud-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    color: #ffffff;
+    background: #0d6efd;
+}
+
+.readaloud-btn:hover {
+    background: #0b5ed7;
+}
+
+.readaloud-stop {
+    padding: 0 12px;
+    color: #333333;
+    background: #eef1f4;
+}
+
+.readaloud-stop:hover {
+    background: #dde2e7;
+}
+
+.readaloud-stop[disabled] {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.readaloud-rate select {
+    padding: 0 8px;
+    color: #333333;
+    background: #eef1f4;
+}
+
+.readaloud-btn:focus-visible,
+.readaloud-rate select:focus-visible {
+    outline: 3px solid #ffbf47;
+    outline-offset: 2px;
+}
+
+.readaloud-widget.is-playing .readaloud-play {
+    background: #198754;
+}
+
+.readaloud-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 480px) {
+    .readaloud-widget {
+        right: 8px;
+        bottom: 8px;
+    }
+
+    .readaloud-play .readaloud-text {
+        display: none;
+    }
+}
+
+@media print {
+    .readaloud-widget {
+        display: none !important;
+    }
+}
